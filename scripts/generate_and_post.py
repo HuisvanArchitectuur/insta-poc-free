@@ -1,31 +1,53 @@
 import os
 import requests
 
-# 1. Genereer AI-afbeelding via Hugging Face
-prompt = "modern architecture innovation"
-hf_url = "https://api-inference.huggingface.co/models/stable-diffusion-v1-5"
-hf_headers = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
-response = requests.post(hf_url, headers=hf_headers, json={"inputs": prompt})
-with open('output.png', 'wb') as f:
+# 1. Ophalen van secrets
+access_token = os.getenv('INSTA_ACCESS_TOKEN')
+business_id = os.getenv('INSTA_BUSINESS_ID')
+hf_token = os.getenv('HF_API_TOKEN')
+
+# 2. Genereer een afbeelding met Hugging Face
+prompt = "A futuristic architectural concept in a European city"
+headers = {
+    "Authorization": f"Bearer {hf_token}"
+}
+response = requests.post(
+    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2",
+    headers=headers,
+    json={"inputs": prompt}
+)
+
+# 3. Sla afbeelding lokaal op
+image_path = "output.png"
+with open(image_path, "wb") as f:
     f.write(response.content)
 
-# 2. Maak caption
-caption = f"Architectuur innovatie van de dag: {prompt}. #architectuur #innovation"
+print("✅ Afbeelding gegenereerd en opgeslagen als output.png")
 
-# 3. Post naar Instagram
-business_id = os.getenv('INSTA_BUSINESS_ID')
-access_token = os.getenv('INSTA_ACCESS_TOKEN')
-data = {
-    'image_url': 'https://jouwdomein.nl/output.png',
-    'caption': caption,
-    'access_token': access_token
+# 4. Upload afbeelding naar een externe host (dit voorbeeld gebruikt een placeholder)
+# In een echte situatie heb je een upload-URL nodig (bv. S3, ImgBB, Cloudinary...)
+image_url = "https://via.placeholder.com/600x400.png?text=Demo+Architectuur"  # ← Vervang dit!
+
+# 5. Maak Instagram-post (stap 1: media uploaden)
+media_endpoint = f"https://graph.facebook.com/v16.0/{business_id}/media"
+media_payload = {
+    "image_url": image_url,
+    "caption": f"✨ Dagelijkse inspiratie: {prompt}",
+    "access_token": access_token
 }
-media_resp = requests.post(
-    f"https://graph.facebook.com/v16.0/{business_id}/media", data=data
-).json()
+media_resp = requests.post(media_endpoint, data=media_payload).json()
+print("📦 Antwoord van media upload:", media_resp)
 
-publish_resp = requests.post(
-    f"https://graph.facebook.com/v16.0/{business_id}/media_publish",
-    data={'creation_id': media_resp['id'], 'access_token': access_token}
-).json()
-print('Gepost:', publish_resp)
+# 6. Foutafhandeling
+if 'id' not in media_resp:
+    print("❌ Fout bij aanmaken media object: geen 'id' ontvangen")
+    exit(1)
+
+# 7. Publiceer post (stap 2)
+publish_endpoint = f"https://graph.facebook.com/v16.0/{business_id}/media_publish"
+publish_payload = {
+    "creation_id": media_resp['id'],
+    "access_token": access_token
+}
+publish_resp = requests.post(publish_endpoint, data=publish_payload).json()
+print("📤 Publicatie resultaat:", publish_resp)

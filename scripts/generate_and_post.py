@@ -3,7 +3,7 @@ import requests
 
 # 1. Ophalen van secrets
 access_token = os.getenv('META_ACCESS_TOKEN')
-business_id = os.getenv('INSTA_BUSINESS_ID')
+business_id = os.getenv('META_BUSINESS_ID')
 hf_token = os.getenv('HF_API_TOKEN')
 
 # 2. Genereer een afbeelding met Hugging Face

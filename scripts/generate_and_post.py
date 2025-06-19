@@ -26,7 +26,7 @@ print("✅ Afbeelding gegenereerd en opgeslagen als output.png")
 
 # 4. Upload afbeelding naar een externe host (dit voorbeeld gebruikt een placeholder)
 # In een echte situatie heb je een upload-URL nodig (bv. S3, ImgBB, Cloudinary...)
-image_url = "https://via.placeholder.com/600x400.png?text=Demo+Architectuur"  # ← Vervang dit!
+image_url = "https://media.gq.com/photos/5b6b20e3a3a1320b7280f029/master/w_1600%2Cc_limit/The-Brutal-Wonders-Of-The-Architecture-World-GQ-Style-Fall-2018_07.jpg"  # ← Vervang dit!
 
 # 5. Maak Instagram-post (stap 1: media uploaden)
 media_endpoint = f"https://graph.facebook.com/v16.0/{business_id}/media"

@@ -2,7 +2,7 @@ import os
 import requests
 
 # 1. Ophalen van secrets
-access_token = os.getenv('INSTA_ACCESS_TOKEN')
+access_token = os.getenv('META_ACCESS_TOKEN')
 business_id = os.getenv('INSTA_BUSINESS_ID')
 hf_token = os.getenv('HF_API_TOKEN')
 

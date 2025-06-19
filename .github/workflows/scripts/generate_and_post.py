@@ -15,7 +15,6 @@ caption = f"Architectuur innovatie van de dag: {prompt}. #architectuur #innovati
 # 3. Post naar Instagram
 business_id = os.getenv('INSTA_BUSINESS_ID')
 access_token = os.getenv('INSTA_ACCESS_TOKEN')
-# Media-object aanmaken
 data = {
     'image_url': 'https://jouwdomein.nl/output.png',
     'caption': caption,
@@ -25,7 +24,6 @@ media_resp = requests.post(
     f"https://graph.facebook.com/v16.0/{business_id}/media", data=data
 ).json()
 
-# Publiceren
 publish_resp = requests.post(
     f"https://graph.facebook.com/v16.0/{business_id}/media_publish",
     data={'creation_id': media_resp['id'], 'access_token': access_token}

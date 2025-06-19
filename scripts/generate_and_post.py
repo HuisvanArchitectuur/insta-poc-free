@@ -44,7 +44,7 @@ if 'id' not in media_resp:
     exit(1)
 
 # 7. Publiceer post (stap 2)
-publish_endpoint = f"https://graph.facebook.com/v16.0/{business_id}/media_publish"
+publish_endpoint = f"https://graph.facebook.com/v23.0/{business_id}/media_publish"
 publish_payload = {
     "creation_id": media_resp['id'],
     "access_token": access_token

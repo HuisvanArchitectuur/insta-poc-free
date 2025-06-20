@@ -17,7 +17,7 @@ cloudinary.config(
 # 2. Genereer afbeelding
 prompt = "A futuristic architectural concept in a European city"
 hf_resp = requests.post(
-    "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+    "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4",
     headers={"Authorization": f"Bearer {hf_token}"},
     json={"inputs": prompt}
 )

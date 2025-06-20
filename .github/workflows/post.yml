@@ -24,7 +24,7 @@ jobs:
       - name: Run script
         run: python scripts/generate_and_post.py
         env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          HF_API_TOKEN: ${{ secrets.HF_API_TOKEN }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
           META_BUSINESS_ID: ${{ secrets.META_BUSINESS_ID }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}

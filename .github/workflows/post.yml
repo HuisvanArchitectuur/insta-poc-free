@@ -3,7 +3,7 @@ name: Daily Instagram Post
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '10 8,20 * * *'  # Elke dag om 08:10 en 20:10 UTC (~10:10 en 22:10 BE zomertijd)
 
 jobs:
   post:

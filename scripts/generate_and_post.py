@@ -1,53 +1,39 @@
-import os
-import requests
+import os, requests, pyimgur
 
-# 1. Ophalen van secrets
-access_token = os.getenv('META_ACCESS_TOKEN')
-business_id = os.getenv('META_BUSINESS_ID')
-hf_token = os.getenv('HF_API_TOKEN')
+# 1. Secrets
+hf_token = os.getenv("HF_API_TOKEN")
+CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
+CLIENT_SECRET = os.getenv("IMGUR_CLIENT_SECRET")
+instagram_token = os.getenv("META_ACCESS_TOKEN")
+ig_business_id = os.getenv("META_BUSINESS_ID")
 
-# 2. Genereer een afbeelding met Hugging Face
+# 2. Genereer afbeelding
 prompt = "A futuristic architectural concept in a European city"
-headers = {
-    "Authorization": f"Bearer {hf_token}"
-}
-response = requests.post(
+hf_resp = requests.post(
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2",
-    headers=headers,
+    headers={"Authorization": f"Bearer {hf_token}"},
     json={"inputs": prompt}
 )
+with open("output.png","wb") as f:
+    f.write(hf_resp.content)
+print("✅ Image gegenereerd en opgeslagen")
 
-# 3. Sla afbeelding lokaal op
-image_path = "output.png"
-with open(image_path, "wb") as f:
-    f.write(response.content)
+# 3. Upload naar Imgur
+im = pyimgur.Imgur(CLIENT_ID, CLIENT_SECRET)
+uploaded = im.upload_image("output.png", title=prompt)
+image_url = uploaded.link
+print("✔️ Geüpload naar Imgur:", image_url)
 
-print("✅ Afbeelding gegenereerd en opgeslagen als output.png")
-
-# 4. Upload afbeelding naar een externe host (dit voorbeeld gebruikt een placeholder)
-# In een echte situatie heb je een upload-URL nodig (bv. S3, ImgBB, Cloudinary...)
-image_url = "https://media.gq.com/photos/5b6b20e3a3a1320b7280f029/master/w_1600%2Cc_limit/The-Brutal-Wonders-Of-The-Architecture-World-GQ-Style-Fall-2018_07.jpg"  # ← Vervang dit!
-
-# 5. Maak Instagram-post (stap 1: media uploaden)
-media_endpoint = f"https://graph.facebook.com/v16.0/{business_id}/media"
-media_payload = {
-    "image_url": image_url,
-    "caption": f"✨ Dagelijkse inspiratie: {prompt}",
-    "access_token": access_token
-}
-media_resp = requests.post(media_endpoint, data=media_payload).json()
-print("📦 Antwoord van media upload:", media_resp)
-
-# 6. Foutafhandeling
-if 'id' not in media_resp:
-    print("❌ Fout bij aanmaken media object: geen 'id' ontvangen")
-    exit(1)
-
-# 7. Publiceer post (stap 2)
-publish_endpoint = f"https://graph.facebook.com/v23.0/{business_id}/media_publish"
-publish_payload = {
-    "creation_id": media_resp['id'],
-    "access_token": access_token
-}
-publish_resp = requests.post(publish_endpoint, data=publish_payload).json()
-print("📤 Publicatie resultaat:", publish_resp)
+# 4. Post naar Instagram
+media = requests.post(
+    f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
+    data={"image_url": image_url, "caption": f"✨ {prompt}", "access_token": instagram_token}
+).json()
+print("📦 Media upload respons:", media)
+if 'id' not in media:
+    print("❌ Geen media-id ontvangen:", media); exit(1)
+publish = requests.post(
+    f"https://graph.facebook.com/v23.0/{ig_business_id}/media_publish",
+    data={"creation_id": media['id'], "access_token": instagram_token}
+).json()
+print("📤 Publicatie:", publish)

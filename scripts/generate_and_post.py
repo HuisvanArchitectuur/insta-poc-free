@@ -1,13 +1,17 @@
-import os, requests, pyimgur
+import os, requests, cloudinary, cloudinary.uploader
 
-# 1. Secrets
+# Secrets
 hf_token = os.getenv("HF_API_TOKEN")
-CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
-CLIENT_SECRET = os.getenv("IMGUR_CLIENT_SECRET")
 instagram_token = os.getenv("META_ACCESS_TOKEN")
 ig_business_id = os.getenv("META_BUSINESS_ID")
 
-# 2. Genereer afbeelding
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+)
+
+# 1. Genereer afbeelding
 prompt = "A futuristic architectural concept in a European city"
 hf_resp = requests.post(
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2",
@@ -16,22 +20,22 @@ hf_resp = requests.post(
 )
 with open("output.png","wb") as f:
     f.write(hf_resp.content)
-print("✅ Image gegenereerd en opgeslagen")
+print("✅ Afbeelding gegenereerd")
 
-# 3. Upload naar Imgur
-im = pyimgur.Imgur(CLIENT_ID, CLIENT_SECRET)
-uploaded = im.upload_image("output.png", title=prompt)
-image_url = uploaded.link
-print("✔️ Geüpload naar Imgur:", image_url)
+# 2. Upload naar Cloudinary
+up = cloudinary.uploader.upload("output.png", folder="daily_posts")
+image_url = up["secure_url"]
+print("✔️ Geüpload naar Cloudinary:", image_url)
 
-# 4. Post naar Instagram
+# 3. Post naar Instagram
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
     data={"image_url": image_url, "caption": f"✨ {prompt}", "access_token": instagram_token}
 ).json()
 print("📦 Media upload respons:", media)
 if 'id' not in media:
-    print("❌ Geen media-id ontvangen:", media); exit(1)
+    print("❌ Geen media-id:", media); exit(1)
+
 publish = requests.post(
     f"https://graph.facebook.com/v23.0/{ig_business_id}/media_publish",
     data={"creation_id": media['id'], "access_token": instagram_token}

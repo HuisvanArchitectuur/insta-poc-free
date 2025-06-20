@@ -19,7 +19,7 @@ cloudinary.config(
 seed = random.randint(0, 99999999)
 
 # 3. Genereer afbeelding
-prompt = "futuristic architectural concept in a European city"
+prompt = "futuristic architectural conceptual building in an European city, photorealistic rendering, at golden hour"
 hf_resp = requests.post(
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
     headers={"Authorization": f"Bearer {hf_token}"},
@@ -55,7 +55,7 @@ except Exception as e:
 # 7. Publiceer op Instagram
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
-    data={"image_url": image_url, "caption": f"✨ Another {prompt}", "access_token": instagram_token}
+    data={"image_url": image_url, "caption": f"✨ Another futuristic architectural conceptual building in an European city", "access_token": instagram_token}
 ).json()
 print("📦 Media upload response:", media)
 if 'id' not in media:

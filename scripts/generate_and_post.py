@@ -55,7 +55,7 @@ except Exception as e:
 # 7. Publiceer op Instagram
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
-    data={"image_url": image_url, "caption": f"✨ {prompt} (seed: {seed})", "access_token": instagram_token}
+    data={"image_url": image_url, "caption": f"✨ Another {prompt}", "access_token": instagram_token}
 ).json()
 print("📦 Media upload response:", media)
 if 'id' not in media:

@@ -14,15 +14,22 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
-# 2. Genereer afbeelding
+# 2. Genereer een random seed
+seed = random.randint(0, 99999999)
+
+# 3. Genereer afbeelding
 prompt = "A futuristic architectural concept in a European city"
 hf_resp = requests.post(
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
+    "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4",
     headers={"Authorization": f"Bearer {hf_token}"},
-    json={"inputs": prompt}
+    json={
+        "inputs": prompt,
+        "parameters": {"seed": seed}
+    }
 )
+print("⚡️ Gebruikte seed:", seed)
 
-# 3. Validatie check
+# 4. Validatie check
 content_type = hf_resp.headers.get("Content-Type", "")
 if hf_resp.status_code != 200 or not content_type.startswith("image/"):
     print("❌ API gaf geen afbeelding — mogelijk model onbeschikbaar?")
@@ -30,12 +37,12 @@ if hf_resp.status_code != 200 or not content_type.startswith("image/"):
     print("Response:", hf_resp.text)
     exit(1)
 
-# 4. Opslaan
+# 5. Opslaan
 with open("output.png", "wb") as f:
     f.write(hf_resp.content)
 print("✅ Afbeelding opgeslagen als output.png")
 
-# 5. Upload naar Cloudinary
+# 6. Upload naar Cloudinary
 try:
     up = cloudinary.uploader.upload("output.png", folder="daily_posts")
     image_url = up["secure_url"]

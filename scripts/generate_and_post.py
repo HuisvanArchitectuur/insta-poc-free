@@ -3,7 +3,7 @@ import requests
 import cloudinary
 import cloudinary.uploader
 
-# 1. Secrets
+# 1. Secrets ophalen
 hf_token = os.getenv("HF_API_TOKEN")
 instagram_token = os.getenv("META_ACCESS_TOKEN")
 ig_business_id = os.getenv("META_BUSINESS_ID")
@@ -14,10 +14,10 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
-# 2. Genereer afbeelding met Hugging Face
+# 2. Genereer afbeelding met de juiste Hugging Face-model-URL
 prompt = "A futuristic architectural concept in a European city"
 hf_resp = requests.post(
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2",
+    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
     headers={"Authorization": f"Bearer {hf_token}"},
     json={"inputs": prompt}
 )

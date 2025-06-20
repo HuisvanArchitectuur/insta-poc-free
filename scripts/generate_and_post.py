@@ -21,7 +21,7 @@ seed = random.randint(0, 99999999)
 # 3. Genereer afbeelding
 prompt = "A futuristic architectural concept in a European city"
 hf_resp = requests.post(
-    "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4",
+    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
     headers={"Authorization": f"Bearer {hf_token}"},
     json={
         "inputs": prompt,
@@ -52,10 +52,10 @@ except Exception as e:
     print("❌ Fout tijdens upload:", e)
     exit(1)
 
-# 6. Publiceer op Instagram
+# 7. Publiceer op Instagram
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
-    data={"image_url": image_url, "caption": f"✨ {prompt}", "access_token": instagram_token}
+    data={"image_url": image_url, "caption": f"✨ {prompt} (seed: {seed})", "access_token": instagram_token}
 ).json()
 print("📦 Media upload response:", media)
 if 'id' not in media:

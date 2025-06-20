@@ -1,4 +1,5 @@
 import os
+import random
 import requests
 import cloudinary
 import cloudinary.uploader

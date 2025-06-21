@@ -43,7 +43,16 @@ prompts = [
     "Design an experimental {building_type} in {city} where the building’s unique form is driven by its function. Use unexpected combinations of {material1} and {material2}, and integrate features like rooftop parks or open amphitheaters. The image captures people exploring the innovative spaces at golden hour."
 ]
 
-prompt_template = random.choice(prompts)
+# 4. Post Counter (om de 3 posts een nieuw concept)
+counter_file = "post_counter.txt"
+try:
+    with open(counter_file, "r") as f:
+        post_counter = int(f.read().strip())
+except FileNotFoundError:
+    post_counter = 0
+
+concept_idx = (post_counter // 3) % len(prompts)
+prompt_template = prompts[concept_idx]
 prompt = prompt_template.format(
     city=city,
     building_type=building_type,
@@ -51,7 +60,9 @@ prompt = prompt_template.format(
     material2=material2
 )
 
-# 4. Genereer afbeelding
+print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
+
+# 5. Genereer afbeelding
 hf_resp = requests.post(
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
     headers={"Authorization": f"Bearer {hf_token}"},
@@ -60,7 +71,6 @@ hf_resp = requests.post(
         "parameters": {"seed": seed}
     }
 )
-print("⚡️ Seed:", seed, "| City:", city, "| Building:", building_type, "| Materials:", material1, "+", material2)
 
 content_type = hf_resp.headers.get("Content-Type", "")
 if hf_resp.status_code != 200 or not content_type.startswith("image/"):
@@ -69,12 +79,12 @@ if hf_resp.status_code != 200 or not content_type.startswith("image/"):
     print("Response:", hf_resp.text)
     exit(1)
 
-# 5. Save image
+# 6. Save image
 with open("output.png", "wb") as f:
     f.write(hf_resp.content)
 print("✅ Image saved as output.png")
 
-# 6. Upload to Cloudinary
+# 7. Upload to Cloudinary
 try:
     up = cloudinary.uploader.upload("output.png", folder="daily_posts")
     image_url = up["secure_url"]
@@ -83,7 +93,7 @@ except Exception as e:
     print("❌ Upload error:", e)
     exit(1)
 
-# 7. Hashtags
+# 8. Hashtags
 hashtags = [
     "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture",
     "#cityscape", "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture",
@@ -95,7 +105,7 @@ caption = (
     f"{' '.join(hashtags)}"
 )
 
-# 8. Post to Instagram
+# 9. Post to Instagram
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
     data={"image_url": image_url, "caption": caption, "access_token": instagram_token}
@@ -110,3 +120,7 @@ publish = requests.post(
     data={"creation_id": media['id'], "access_token": instagram_token}
 ).json()
 print("📤 Publish result:", publish)
+
+# 10. Counter updaten voor volgende keer
+with open(counter_file, "w") as f:
+    f.write(str(post_counter + 1))

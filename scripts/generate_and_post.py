@@ -43,7 +43,7 @@ prompts = [
     "Design an experimental {building_type} in {city} where the building’s unique form is driven by its function. Use unexpected combinations of {material1} and {material2}, and integrate features like rooftop parks or open amphitheaters. The image captures people exploring the innovative spaces at golden hour."
 ]
 
-# 4. Post Counter (om de 3 posts een nieuw concept)
+# 4. Post Counter (om de 3 posts een nieuw concept en serie)
 counter_file = "post_counter.txt"
 try:
     with open(counter_file, "r") as f:
@@ -53,12 +53,14 @@ except FileNotFoundError:
 
 concept_idx = (post_counter // 3) % len(prompts)
 prompt_template = prompts[concept_idx]
+
+# Consistente stijl in de prompt
 prompt = prompt_template.format(
     city=city,
     building_type=building_type,
     material1=material1,
     material2=material2
-)
+) + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish."
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
@@ -93,15 +95,44 @@ except Exception as e:
     print("❌ Upload error:", e)
     exit(1)
 
-# 8. Hashtags
+# 8. Series, Hashtags en Caption (Matitectura-style)
+series_titles = [
+    "FUTURISTIC {building_type} X {city}",
+    "CONTEXTUAL DESIGN X {city}",
+    "REIMAGINED SPACES X {city}",
+    "URBAN VISION X {city}",
+    "HISTORIC FUSION X {city}"
+]
+series_idx = (post_counter // 3) % len(series_titles)
+series_title = series_titles[series_idx].format(
+    building_type=building_type.upper(),
+    city=city.upper()
+)
+
+short_descriptions = [
+    f"Exploring the blend of {material1} and {material2} in the heart of {city}.",
+    f"Where innovation meets tradition: {building_type} designed for the future.",
+    f"AI-powered vision for a new {building_type} in {city}, with sustainable touches."
+]
+cta_questions = [
+    "How would you feel in this space? Drop your thoughts!",
+    "What atmosphere does this evoke for you? Let us know below!",
+    "Save for inspiration or share your opinion below!"
+]
+desc1 = random.choice(short_descriptions)
+cta = random.choice(cta_questions)
+
 hashtags = [
     "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture",
     "#cityscape", "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture",
     "#cityvision", "#dreambuildings", "#stedenbouw", "#urbansketch", "#aiarchitecture",
-    "#architectuur", "#designlovers", city_hashtag, "#artificialintelligence"
+    "#architectuur", "#designlovers", city_hashtag, "#artificialintelligence", "#midjourney", "#innoarchseries"
 ]
+
 caption = (
-    f"✨ {city}: {building_type.capitalize()} in {material1} and {material2}. Futuristic architecture meets real city vibes.\n\n"
+    f"✨ {series_title}\n"
+    f"{desc1}\n\n"
+    f"{cta}\n\n"
     f"{' '.join(hashtags)}"
 )
 

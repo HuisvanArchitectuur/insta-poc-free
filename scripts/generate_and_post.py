@@ -34,9 +34,14 @@ city, city_hashtag = random.choice(cities)
 building_type = random.choice(building_types)
 material1, material2 = random.sample(materials1 + materials2, 2)
 
-# 3. Concept Prompts
+# ---- Toevoeging voor green roofs ----
+green_roof_phrase = ""
+if random.random() < 0.4:  # Ongeveer 40% kans
+    green_roof_phrase = "green roofs, "
+
+# 3. Concept Prompts (met green_roof_phrase op juiste plaats)
 prompts = [
-    "Design a visionary {building_type} in {city} that showcases innovative sustainable architecture. The building features green roofs, extensive use of {material1} and {material2}, integrated solar panels, and visible water recycling systems. The design feels rooted in the city’s context, and is bustling with people interacting during golden hour.",
+    "Design a visionary {building_type} in {city} that showcases innovative sustainable architecture. The building features {green_roof_phrase}extensive use of {material1} and {material2}, integrated solar panels, and visible water recycling systems. The design feels rooted in the city’s context, and is bustling with people interacting during golden hour.",
     "Create a futuristic {building_type} in {city}, inspired by local history, art, or iconic architectural motifs. Blend traditional {material1} with cutting-edge {material2}, resulting in a building that feels both familiar and forward-thinking. Present the scene at golden hour, with people engaging in and around the building.",
     "Generate a concept {building_type} in {city} designed for social interaction and community gathering. Incorporate inviting plazas, open terraces, and vibrant public spaces. The architecture features a mix of {material1} and {material2}, with greenery woven throughout. Lively crowds of people interact during golden hour.",
     "Imagine a flexible mixed-use {building_type} in {city}, capable of adapting to changing community needs. The structure combines modular design, multi-purpose spaces, and materials like {material1} and {material2}. The building is filled with activity and interaction, shown at golden hour.",
@@ -59,7 +64,8 @@ prompt = prompt_template.format(
     city=city,
     building_type=building_type,
     material1=material1,
-    material2=material2
+    material2=material2,
+    green_roof_phrase=green_roof_phrase
 ) + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish."
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
@@ -122,18 +128,37 @@ cta_questions = [
 desc1 = random.choice(short_descriptions)
 cta = random.choice(cta_questions)
 
-hashtags = [
-    "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture",
-    "#cityscape", "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture",
-    "#cityvision", "#dreambuildings", "#stedenbouw", "#urbansketch", "#aiarchitecture",
-    "#architectuur", "#designlovers", city_hashtag, "#artificialintelligence", "#midjourney", "#innoarchseries"
+# ------ HASHTAGSETS & ROTATIE --------
+hashtag_sets = [
+    [
+        "#AIinArchitecture", "#GenerativeDesign", "#ParametricDesign", "#DigitalArchitecture", "#AIDesign",
+        "#ArchitectureLovers", "#Archilovers", "#ModernArchitecture", "#ArchitectureAndTechnology", "#SmartArchitecture",
+        "#AlgorithmicDesign", "#FuturisticArchitecture", "#ArchDaily", "#Dezeen", city_hashtag
+    ],
+    [
+        "#DesignWithAI", "#MachineLearningDesign", "#ArchitecturalInnovation", "#NextGenDesign", "#TechInArchitecture",
+        "#ArchitectsOfInstagram", "#ContemporaryArchitecture", "#ArchitectureCommunity", "#InteriorArchitecture",
+        "#CreativeArchitecture", "#ArchitectureVisualization", "#DesignBoom", "#FuturisticArchitecture", city_hashtag
+    ],
+    [
+        "#AIDesign", "#SmartArchitecture", "#ParametricArchitecture", "#GenerativeArt", "#ArchitectureView",
+        "#ArchitectureModel", "#UrbanArchitecture", "#ArchitectureDetail", "#ArchDaily", "#Dezeen",
+        "#AIDesignCommunity", "#ArchitecturalPhotography", "#ArchitectureInnovation", "#AIinArchitecture", city_hashtag
+    ],
+    [
+        "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture",
+        "#cityscape", "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture",
+        "#cityvision", "#dreambuildings", "#stedenbouw", "#urbansketch", "#aiarchitecture",
+        "#architectuur", "#designlovers", city_hashtag, "#artificialintelligence", "#midjourney", "#innoarchseries"
+    ]
 ]
+hashtag_list = hashtag_sets[post_counter % len(hashtag_sets)]
 
 caption = (
     f"✨ {series_title}\n"
     f"{desc1}\n\n"
     f"{cta}\n\n"
-    f"{' '.join(hashtags)}"
+    f"{' '.join(hashtag_list)}"
 )
 
 # 9. Post to Instagram

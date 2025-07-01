@@ -131,25 +131,32 @@ cta = random.choice(cta_questions)
 # ------ HASHTAGSETS & ROTATIE --------
 hashtag_sets = [
     [
-        "#AIinArchitecture", "#GenerativeDesign", "#ParametricDesign", "#DigitalArchitecture", "#AIDesign",
-        "#ArchitectureLovers", "#Archilovers", "#ModernArchitecture", "#ArchitectureAndTechnology", "#SmartArchitecture",
-        "#AlgorithmicDesign", "#FuturisticArchitecture", "#ArchDaily", "#Dezeen", city_hashtag
+        #AIinArchitecture #GenerativeDesign #ParametricDesign #DigitalArchitecture #AIDesign 
+        #ArchitectureLovers #Archilovers #ModernArchitecture #ArchitectureAndTechnology 
+        #SmartArchitecture #AlgorithmicDesign #FuturisticArchitecture #ArchDaily #Dezeen 
+        #urbaninnovation #futurecities #aiarchviz #architecturegram #cityvision #architecture_hunter [city_hashtag]
+
     ],
     [
-        "#DesignWithAI", "#MachineLearningDesign", "#ArchitecturalInnovation", "#NextGenDesign", "#TechInArchitecture",
-        "#ArchitectsOfInstagram", "#ContemporaryArchitecture", "#ArchitectureCommunity", "#InteriorArchitecture",
-        "#CreativeArchitecture", "#ArchitectureVisualization", "#DesignBoom", "#FuturisticArchitecture", city_hashtag
+        #DesignWithAI #MachineLearningDesign #ArchitecturalInnovation #NextGenDesign #TechInArchitecture
+        #ArchitectsOfInstagram #ContemporaryArchitecture #ArchitectureCommunity #InteriorArchitecture
+        #CreativeArchitecture #ArchitectureVisualization #DesignBoom #FuturisticArchitecture #urbaninnovation
+        #aiarchitecture #AIinArchitecture #AlgorithmicDesign #ModernArchitecture #ArchDaily [city_hashtag]
+
     ],
     [
-        "#AIDesign", "#SmartArchitecture", "#ParametricArchitecture", "#GenerativeArt", "#ArchitectureView",
-        "#ArchitectureModel", "#UrbanArchitecture", "#ArchitectureDetail", "#ArchDaily", "#Dezeen",
-        "#AIDesignCommunity", "#ArchitecturalPhotography", "#ArchitectureInnovation", "#AIinArchitecture", city_hashtag
+        #AIDesign #SmartArchitecture #ParametricArchitecture #GenerativeArt #ArchitectureView
+        #ArchitectureModel #UrbanArchitecture #ArchitectureDetail #ArchDaily #Dezeen
+        #AIDesignCommunity #ArchitectureInnovation #AIinArchitecture #futurecities #DesignBoom
+        #AlgorithmicDesign #architecturelovers #architecture_hunter #cityvision [city_hashtag]
+
     ],
     [
-        "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture",
-        "#cityscape", "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture",
-        "#cityvision", "#dreambuildings", "#stedenbouw", "#urbansketch", "#aiarchitecture",
-        "#architectuur", "#designlovers", city_hashtag, "#artificialintelligence", "#midjourney", "#innoarchseries"
+        #architecturelovers #aiart #conceptarchitecture #futureofarchitecture #cityscape
+        #europeancities #archdaily #innoarchdaily #futuristicarchitecture #cityvision #dreambuildings
+        #stedenbouw #urbansketch #aiarchitecture #architectuur #designlovers #AlgorithmicDesign
+        #ModernArchitecture #AIinArchitecture [city_hashtag] #artificialintelligence
+
     ]
 ]
 hashtag_list = hashtag_sets[post_counter % len(hashtag_sets)]

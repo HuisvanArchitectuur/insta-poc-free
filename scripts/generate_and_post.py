@@ -4,6 +4,22 @@ import requests
 import cloudinary
 import cloudinary.uploader
 
+# --- LOCATIE FUNCTIE TOEGEVOEGD ---
+def get_location_id(city_name, access_token):
+    url = "https://graph.facebook.com/v17.0/ig_location_search"
+    params = {
+        "q": city_name,
+        "fields": "id,name",
+        "access_token": access_token
+    }
+    resp = requests.get(url, params=params)
+    if resp.status_code == 200:
+        data = resp.json()
+        if 'data' in data and data['data']:
+            return data['data'][0]['id']
+    print(f"⚠️ Geen locatie-id gevonden voor: {city_name}")
+    return None
+
 # 1. Secrets
 hf_token = os.getenv("HF_API_TOKEN")
 instagram_token = os.getenv("META_ACCESS_TOKEN")
@@ -131,32 +147,28 @@ cta = random.choice(cta_questions)
 # ------ HASHTAGSETS & ROTATIE --------
 hashtag_sets = [
     [
-        #AIinArchitecture #GenerativeDesign #ParametricDesign #DigitalArchitecture #AIDesign 
-        #ArchitectureLovers #Archilovers #ModernArchitecture #ArchitectureAndTechnology 
-        #SmartArchitecture #AlgorithmicDesign #FuturisticArchitecture #ArchDaily #Dezeen 
-        #urbaninnovation #futurecities #aiarchviz #architecturegram #cityvision #architecture_hunter [city_hashtag]
-
+        "#AIinArchitecture", "#GenerativeDesign", "#ParametricDesign", "#DigitalArchitecture", "#AIDesign",
+        "#ArchitectureLovers", "#Archilovers", "#ModernArchitecture", "#ArchitectureAndTechnology",
+        "#SmartArchitecture", "#AlgorithmicDesign", "#FuturisticArchitecture", "#ArchDaily", "#Dezeen",
+        "#urbaninnovation", "#futurecities", "#aiarchviz", "#architecturegram", "#cityvision", "#architecture_hunter", city_hashtag
     ],
     [
-        #DesignWithAI #MachineLearningDesign #ArchitecturalInnovation #NextGenDesign #TechInArchitecture
-        #ArchitectsOfInstagram #ContemporaryArchitecture #ArchitectureCommunity #InteriorArchitecture
-        #CreativeArchitecture #ArchitectureVisualization #DesignBoom #FuturisticArchitecture #urbaninnovation
-        #aiarchitecture #AIinArchitecture #AlgorithmicDesign #ModernArchitecture #ArchDaily [city_hashtag]
-
+        "#DesignWithAI", "#MachineLearningDesign", "#ArchitecturalInnovation", "#NextGenDesign", "#TechInArchitecture",
+        "#ArchitectsOfInstagram", "#ContemporaryArchitecture", "#ArchitectureCommunity", "#InteriorArchitecture",
+        "#CreativeArchitecture", "#ArchitectureVisualization", "#DesignBoom", "#FuturisticArchitecture", "#urbaninnovation",
+        "#aiarchitecture", "#AIinArchitecture", "#AlgorithmicDesign", "#ModernArchitecture", "#ArchDaily", city_hashtag
     ],
     [
-        #AIDesign #SmartArchitecture #ParametricArchitecture #GenerativeArt #ArchitectureView
-        #ArchitectureModel #UrbanArchitecture #ArchitectureDetail #ArchDaily #Dezeen
-        #AIDesignCommunity #ArchitectureInnovation #AIinArchitecture #futurecities #DesignBoom
-        #AlgorithmicDesign #architecturelovers #architecture_hunter #cityvision [city_hashtag]
-
+        "#AIDesign", "#SmartArchitecture", "#ParametricArchitecture", "#GenerativeArt", "#ArchitectureView",
+        "#ArchitectureModel", "#UrbanArchitecture", "#ArchitectureDetail", "#ArchDaily", "#Dezeen",
+        "#AIDesignCommunity", "#ArchitectureInnovation", "#AIinArchitecture", "#futurecities", "#DesignBoom",
+        "#AlgorithmicDesign", "#architecturelovers", "#architecture_hunter", "#cityvision", city_hashtag
     ],
     [
-        #architecturelovers #aiart #conceptarchitecture #futureofarchitecture #cityscape
-        #europeancities #archdaily #innoarchdaily #futuristicarchitecture #cityvision #dreambuildings
-        #stedenbouw #urbansketch #aiarchitecture #architectuur #designlovers #AlgorithmicDesign
-        #ModernArchitecture #AIinArchitecture [city_hashtag] #artificialintelligence
-
+        "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture", "#cityscape",
+        "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture", "#cityvision", "#dreambuildings",
+        "#stedenbouw", "#urbansketch", "#aiarchitecture", "#architectuur", "#designlovers", "#AlgorithmicDesign",
+        "#ModernArchitecture", "#AIinArchitecture", city_hashtag, "#artificialintelligence"
     ]
 ]
 hashtag_list = hashtag_sets[post_counter % len(hashtag_sets)]
@@ -168,10 +180,19 @@ caption = (
     f"{' '.join(hashtag_list)}"
 )
 
-# 9. Post to Instagram
+# 9. Post to Instagram --- LOCATIE TOEGEVOEGD ---
+location_id = get_location_id(city, instagram_token)
+media_data = {
+    "image_url": image_url,
+    "caption": caption,
+    "access_token": instagram_token
+}
+if location_id:
+    media_data["location_id"] = location_id
+
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
-    data={"image_url": image_url, "caption": caption, "access_token": instagram_token}
+    data=media_data
 ).json()
 print("📦 Media upload response:", media)
 if 'id' not in media:

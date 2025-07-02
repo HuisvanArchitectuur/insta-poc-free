@@ -86,27 +86,42 @@ prompt = prompt_template.format(
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
-# 5. Genereer afbeelding
-hf_resp = requests.post(
+# ------- MULTI-ENDPOINT FALLBACK LOGIC STARTS HERE -------
+HF_ENDPOINTS = [
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
-    headers={"Authorization": f"Bearer {hf_token}"},
-    json={
+    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+    "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+    # Voeg hier gerust meer modellen toe!
+]
+
+def generate_image(prompt, seed, hf_token, endpoints):
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    data = {
         "inputs": prompt,
         "parameters": {"seed": seed}
     }
-)
+    for endpoint in endpoints:
+        print(f"🔄 Probeer endpoint: {endpoint}")
+        resp = requests.post(endpoint, headers=headers, json=data)
+        content_type = resp.headers.get("Content-Type", "")
+        if resp.status_code == 200 and content_type.startswith("image/"):
+            print(f"✅ Afbeelding ontvangen van {endpoint}")
+            return resp.content
+        else:
+            print(f"❌ Fout bij {endpoint}: Status {resp.status_code}, Content-Type: {content_type}")
+            print("Response:", resp.text)
+    return None
 
-content_type = hf_resp.headers.get("Content-Type", "")
-if hf_resp.status_code != 200 or not content_type.startswith("image/"):
-    print("❌ No image returned — model might be unavailable?")
-    print("Status:", hf_resp.status_code, "Content-Type:", content_type)
-    print("Response:", hf_resp.text)
+# 5. Genereer afbeelding
+image_content = generate_image(prompt, seed, hf_token, HF_ENDPOINTS)
+if image_content is None:
+    print("❌ Geen enkele image endpoint werkte — abort.")
     exit(1)
 
-# 6. Save image
 with open("output.png", "wb") as f:
-    f.write(hf_resp.content)
+    f.write(image_content)
 print("✅ Image saved as output.png")
+# ------- MULTI-ENDPOINT FALLBACK LOGIC EINDE -------
 
 # 7. Upload to Cloudinary
 try:

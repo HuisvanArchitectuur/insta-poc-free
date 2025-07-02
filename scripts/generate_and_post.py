@@ -92,6 +92,8 @@ print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed:
 # ------- MULTI-ENDPOINT FALLBACK LOGIC -------
 HF_ENDPOINTS = [
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
+    "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
+    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large",
     "https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE"
 ]
 

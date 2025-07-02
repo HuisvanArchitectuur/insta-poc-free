@@ -92,10 +92,7 @@ print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed:
 # ------- MULTI-ENDPOINT FALLBACK LOGIC -------
 HF_ENDPOINTS = [
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
-    "https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE",
-    "https://api-inference.huggingface.co/models/dreamlike-art/dreamlike-photoreal-2.0",
-    "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+    "https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE"
 ]
 
 def generate_image(prompt, seed, hf_token, endpoints):

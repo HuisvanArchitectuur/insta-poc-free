@@ -75,23 +75,27 @@ except FileNotFoundError:
 concept_idx = (post_counter // 3) % len(prompts)
 prompt_template = prompts[concept_idx]
 
-# Consistente stijl in de prompt
-prompt = prompt_template.format(
-    city=city,
-    building_type=building_type,
-    material1=material1,
-    material2=material2,
-    green_roof_phrase=green_roof_phrase
-) + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish."
+# Consistente stijl in de prompt, met enkele extra termen toegevoegd
+prompt = (
+    prompt_template.format(
+        city=city,
+        building_type=building_type,
+        material1=material1,
+        material2=material2,
+        green_roof_phrase=green_roof_phrase
+    )
+    + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish, photo-realistic, cinematic, architectural magazine, detailed lighting."
+)
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
-# ------- MULTI-ENDPOINT FALLBACK LOGIC STARTS HERE -------
+# ------- MULTI-ENDPOINT FALLBACK LOGIC -------
 HF_ENDPOINTS = [
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+    "https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE",
+    "https://api-inference.huggingface.co/models/dreamlike-art/dreamlike-photoreal-2.0",
     "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
-    # Voeg hier gerust meer modellen toe!
+    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
 ]
 
 def generate_image(prompt, seed, hf_token, endpoints):

@@ -130,18 +130,15 @@ response = requests.post(stability_url, headers=headers, files=files)
         "prompt": prompt,
         "output_format": "png"
     }
-    response = requests.post(
-        stability_url,
-        headers=headers,
-        files={"input": (None, json.dumps(payload), "application/json")}
-    )
+   response = requests.post(stability_url, headers=headers, files=files)
     if response.status_code == 200:
         result = response.json()
-        image_content = base64.b64decode(result["image"])
+        image_b64 = result["image"]
+        image_content = base64.b64decode(image_b64)
         print("✅ Afbeelding gegenereerd met Stability v2beta")
     else:
         print("❌ Fallback 1 faalde:", response.status_code, response.text)
-
+    )
 # 🔁 Fallback 2: Stability SDXL v1
 if image_content is None:
     print("🔁 Fallback naar Stability v1 SDXL...")

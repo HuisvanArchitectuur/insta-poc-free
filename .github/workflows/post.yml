@@ -3,7 +3,7 @@ name: Twice Daily Instagram Post
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6,17 * * *'  # 08:00 & 19:00 Belgische tijd (UTC+2)
+    - cron: '0 6,17 * * *' # 08:00 & 19:00 Belgische tijd (UTC+2)
 
 jobs:
   post:
@@ -30,4 +30,4 @@ jobs:
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-          **STABILITY_API_KEY: ${{ secrets.STABILITY_API_KEY }}**  # ✅ DIT IS DE NIEUWE REGEL
+          STABILITY_API_KEY: ${{ secrets.STABILITY_API_KEY }}  # ✅ Nieuw toegevoegd

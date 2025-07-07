@@ -117,8 +117,14 @@ if image_content is None:
     print("🔁 Fallback naar Stability v2beta...")
     stability_url = "https://api.stability.ai/v2beta/stable-image/generate/core"
     headers = {
-        "Authorization": f"Bearer {stability_api_key}",
-        "Accept": "application/json"
+        "Authorization": f"Bearer {stability_api_key}"
+}
+files = {
+    "prompt": (None, prompt),
+    "output_format": (None, "png")
+}
+
+response = requests.post(stability_url, headers=headers, files=files)
     }
     payload = {
         "prompt": prompt,

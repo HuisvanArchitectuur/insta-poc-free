@@ -120,7 +120,7 @@ if image_content is None:
         print("❌ STABILITY_API_KEY ontbreekt.")
         exit(1)
 
- stability_url = "https://api.stability.ai/v2beta/stable-image/generate/core"
+    stability_url ="https://api.stability.ai/v2beta/stable-image/generate/core"
     headers = {
         "Authorization": f"Bearer {stability_api_key}",
         "Accept": "application/json",

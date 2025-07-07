@@ -108,43 +108,66 @@ def generate_image(prompt, seed, hf_token, endpoints):
 image_content = generate_image(prompt, seed, hf_token, HF_ENDPOINTS)
 
 # 6. # Fallback 1: Stability v2beta
-    if image_content is None:
-        print("🔁 Fallback naar Stability v2beta...")
-        stability_url = "https://api.stability.ai/v2beta/stable-image/generate/core"
-        headers = {
-            "Authorization": f"Bearer {stability_api_key}",
-            "Accept": "application/json"
-        }
-        files = {
-            "prompt": (None, prompt),
-            "output_format": (None, "png")
-        }
+        if image_content is None:
+            print("🔁 Fallback naar Stability v2beta...")
+            stability_url = "https://api.stability.ai/v2beta/stable-image/generate/core"
+            headers = {
+                "Authorization": f"Bearer {stability_api_key}",
+                "Accept": "application/json"
+            }
+            files = {
+                "prompt": (None, prompt),
+                "output_format": (None, "png")
+            }
 
-        response = requests.post(stability_url, headers=headers, files=files)
-        if response.status_code == 200:
-            result = response.json()
-            image_b64 = result["image"]
-            image_content = base64.b64decode(image_b64)
-            print("✅ Afbeelding gegenereerd met Stability v2beta")
-        else:
-            print("❌ Fallback 1 faalde:", response.status_code, response.text)
+            response = requests.post(stability_url, headers=headers, files=files)
+            if response.status_code == 200:
+                result = response.json()
+                image_b64 = result["image"]
+                image_content = base64.b64decode(image_b64)
+                print("✅ Afbeelding gegenereerd met Stability v2beta")
+            else:
+                print("❌ Fallback 1 faalde:", response.status_code, response.text)
 
 # 7. # Fallback 2: SDXL v1
-    if image_content is None:
-        print("🔁 Fallback naar Stability SDXL v1...")
-        stability_url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
-        headers = {
-            "Authorization": f"Bearer {stability_api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "text_prompts": [{"text": prompt}],
-            "cfg_scale": 7,
-            "height": 1024,
-            "width": 1024,
-            "samples": 1,
-            "steps": 30
-        }
+        if image_content is None:
+            print("🔁 Fallback naar Stability SDXL v1...")
+            stability_url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+            headers = {
+                "Authorization": f"Bearer {stability_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "text_prompts": [{"text": prompt}],
+                "cfg_scale": 7,
+                "height": 1024,
+                "width": 1024,
+                "samples": 1,
+                "steps": 30
+            }
+
+            response = requests.post(stability_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                result = response.json()
+                image_b64 = result["artifacts"][0]["base64"]
+                image_content = base64.b64decode(image_b64)
+                print("✅ Afbeelding gegenereerd met Stability SDXL")
+            else:
+                print("❌ Fallback 2 faalde ook:", response.status_code, response.text)
+                exit(1)
+
+
+            response = requests.post(stability_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                result = response.json()
+                image_b64 = result["artifacts"][0]["base64"]
+                image_content = base64.b64decode(image_b64)
+                print("✅ Afbeelding gegenereerd met Stability SDXL")
+            else:
+                print("❌ Fallback 2 faalde ook:", response.status_code, response.text)
+                exit(1)
+
+            }
 
         response = requests.post(stability_url, headers=headers, json=payload)
         if response.status_code == 200:
@@ -155,29 +178,6 @@ image_content = generate_image(prompt, seed, hf_token, HF_ENDPOINTS)
         else:
             print("❌ Fallback 2 faalde ook:", response.status_code, response.text)
             exit(1)
-
-
-        response = requests.post(stability_url, headers=headers, json=payload)
-        if response.status_code == 200:
-            result = response.json()
-            image_b64 = result["artifacts"][0]["base64"]
-            image_content = base64.b64decode(image_b64)
-            print("✅ Afbeelding gegenereerd met Stability SDXL")
-        else:
-            print("❌ Fallback 2 faalde ook:", response.status_code, response.text)
-            exit(1)
-
-        }
-
-    response = requests.post(stability_url, headers=headers, json=payload)
-    if response.status_code == 200:
-        result = response.json()
-        image_b64 = result["artifacts"][0]["base64"]
-        image_content = base64.b64decode(image_b64)
-        print("✅ Afbeelding gegenereerd met Stability SDXL")
-    else:
-        print("❌ Fallback 2 faalde ook:", response.status_code, response.text)
-        exit(1)
 
 # 8. Opslaan
 with open("output.png", "wb") as f:

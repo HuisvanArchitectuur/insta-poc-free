@@ -6,7 +6,7 @@ import cloudinary.uploader
 import base64
 import json
 
-# --- LOCATIE FUNCTIE TOEGEVOEGD ---
+# --- LOCATIE FUNCTIE ---
 def get_location_id(city_name, access_token):
     url = "https://graph.facebook.com/v17.0/ig_location_search"
     params = {
@@ -52,10 +52,7 @@ materials2 = ["glass", "steel", "green walls", "polished concrete", "ceramics"]
 city, city_hashtag = random.choice(cities)
 building_type = random.choice(building_types)
 material1, material2 = random.sample(materials1 + materials2, 2)
-
-green_roof_phrase = ""
-if random.random() < 0.4:
-    green_roof_phrase = "green roofs, "
+green_roof_phrase = "green roofs, " if random.random() < 0.4 else ""
 
 # 3. Prompts
 prompts = [
@@ -65,7 +62,8 @@ prompts = [
     "Imagine a flexible mixed-use {building_type} in {city}, capable of adapting to changing community needs. The structure combines modular design, multi-purpose spaces, and materials like {material1} and {material2}. The building is filled with activity and interaction, shown at golden hour.",
     "Design an experimental {building_type} in {city} where the building’s unique form is driven by its function. Use unexpected combinations of {material1} and {material2}, and integrate features like rooftop parks or open amphitheaters. The image captures people exploring the innovative spaces at golden hour."
 ]
-# 4. Post Counter
+
+# 4. Post counter
 counter_file = "post_counter.txt"
 try:
     with open(counter_file, "r") as f:
@@ -74,21 +72,17 @@ except FileNotFoundError:
     post_counter = 0
 
 concept_idx = (post_counter // 3) % len(prompts)
-prompt_template = prompts[concept_idx]
-prompt = (
-    prompt_template.format(
-        city=city,
-        building_type=building_type,
-        material1=material1,
-        material2=material2,
-        green_roof_phrase=green_roof_phrase
-    )
-    + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish, photo-realistic, cinematic, architectural magazine, detailed lighting."
-)
+prompt = prompts[concept_idx].format(
+    city=city,
+    building_type=building_type,
+    material1=material1,
+    material2=material2,
+    green_roof_phrase=green_roof_phrase
+) + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish, photo-realistic, cinematic, architectural magazine, detailed lighting."
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
-# 5. Generate Image (HuggingFace + fallback Stability)
+# 5. Hugging Face Endpoints
 HF_ENDPOINTS = [
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large",
@@ -107,29 +101,29 @@ def generate_image(prompt, seed, hf_token, endpoints):
             print(f"✅ Afbeelding ontvangen van {endpoint}")
             return resp.content
         else:
-            print(f"❌ Fout bij {endpoint}: Status {resp.status_code} – {resp.text}")
+            print(f"❌ Fout bij {endpoint}: Status {resp.status_code}, Content-Type: {content_type}")
+            print("Response:", resp.text)
     return None
 
 image_content = generate_image(prompt, seed, hf_token, HF_ENDPOINTS)
 
-# 🔁 Fallback 1: Stability v2beta
+# 6. Fallback 1: Stability v2beta
 if image_content is None:
     print("🔁 Fallback naar Stability v2beta...")
+    if not stability_api_key:
+        print("❌ STABILITY_API_KEY ontbreekt.")
+        exit(1)
+
     stability_url = "https://api.stability.ai/v2beta/stable-image/generate/core"
     headers = {
         "Authorization": f"Bearer {stability_api_key}"
-}
-files = {
-    "prompt": (None, prompt),
-    "output_format": (None, "png")
-}
-
-response = requests.post(stability_url, headers=headers, files=files)
-    payload = {
-        "prompt": prompt,
-        "output_format": "png"
     }
-   response = requests.post(stability_url, headers=headers, files=files)
+    files = {
+        "prompt": (None, prompt),
+        "output_format": (None, "png")
+    }
+
+    response = requests.post(stability_url, headers=headers, files=files)
     if response.status_code == 200:
         result = response.json()
         image_b64 = result["image"]
@@ -137,8 +131,8 @@ response = requests.post(stability_url, headers=headers, files=files)
         print("✅ Afbeelding gegenereerd met Stability v2beta")
     else:
         print("❌ Fallback 1 faalde:", response.status_code, response.text)
-    )
-# 🔁 Fallback 2: Stability SDXL v1
+
+# 7. Fallback 2: Stability SDXL v1
 if image_content is None:
     print("🔁 Fallback naar Stability v1 SDXL...")
     stability_url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-beta-v2-2-2/text-to-image"
@@ -154,28 +148,32 @@ if image_content is None:
         "samples": 1,
         "steps": 30
     }
+
     response = requests.post(stability_url, headers=headers, json=payload)
     if response.status_code == 200:
         result = response.json()
-        image_content = base64.b64decode(result["artifacts"][0]["base64"])
+        image_b64 = result["artifacts"][0]["base64"]
+        image_content = base64.b64decode(image_b64)
         print("✅ Afbeelding gegenereerd met Stability SDXL")
     else:
         print("❌ Fallback 2 faalde ook:", response.status_code, response.text)
         exit(1)
 
-# 6. Save locally & upload
+# 8. Opslaan
 with open("output.png", "wb") as f:
     f.write(image_content)
 print("✅ Image saved as output.png")
 
+# 9. Upload naar Cloudinary
 try:
     up = cloudinary.uploader.upload("output.png", folder="daily_posts")
     image_url = up["secure_url"]
-    print("☁️ Uploaded to Cloudinary:", image_url)
+    print("✔️ Uploaded successfully:", image_url)
 except Exception as e:
     print("❌ Upload error:", e)
     exit(1)
-# 7. Caption opbouw
+
+# 10. Caption
 series_titles = [
     "FUTURISTIC {building_type} X {city}",
     "CONTEXTUAL DESIGN X {city}",
@@ -188,57 +186,14 @@ series_title = series_titles[series_idx].format(
     building_type=building_type.upper(),
     city=city.upper()
 )
+desc = f"Exploring the blend of {material1} and {material2} in the heart of {city}."
+cta = "What atmosphere does this evoke for you? Let us know below!"
 
-short_descriptions = [
-    f"Exploring the blend of {material1} and {material2} in the heart of {city}.",
-    f"Where innovation meets tradition: {building_type} designed for the future.",
-    f"AI-powered vision for a new {building_type} in {city}, with sustainable touches."
-]
-cta_questions = [
-    "How would you feel in this space? Drop your thoughts!",
-    "What atmosphere does this evoke for you? Let us know below!",
-    "Save for inspiration or share your opinion below!"
-]
-desc1 = random.choice(short_descriptions)
-cta = random.choice(cta_questions)
+hashtags = f"#architecture #aiarchitecture #conceptdesign {city_hashtag} #aiart #archdaily"
 
-# 8. Hashtag sets
-hashtag_sets = [
-    [
-        "#AIinArchitecture", "#GenerativeDesign", "#ParametricDesign", "#DigitalArchitecture", "#AIDesign",
-        "#ArchitectureLovers", "#Archilovers", "#ModernArchitecture", "#ArchitectureAndTechnology",
-        "#SmartArchitecture", "#AlgorithmicDesign", "#FuturisticArchitecture", "#ArchDaily", "#Dezeen",
-        "#urbaninnovation", "#futurecities", "#aiarchviz", "#architecturegram", "#cityvision", "#architecture_hunter", city_hashtag
-    ],
-    [
-        "#DesignWithAI", "#MachineLearningDesign", "#ArchitecturalInnovation", "#NextGenDesign", "#TechInArchitecture",
-        "#ArchitectsOfInstagram", "#ContemporaryArchitecture", "#ArchitectureCommunity", "#InteriorArchitecture",
-        "#CreativeArchitecture", "#ArchitectureVisualization", "#DesignBoom", "#FuturisticArchitecture", "#urbaninnovation",
-        "#aiarchitecture", "#AIinArchitecture", "#AlgorithmicDesign", "#ModernArchitecture", "#ArchDaily", city_hashtag
-    ],
-    [
-        "#AIDesign", "#SmartArchitecture", "#ParametricArchitecture", "#GenerativeArt", "#ArchitectureView",
-        "#ArchitectureModel", "#UrbanArchitecture", "#ArchitectureDetail", "#ArchDaily", "#Dezeen",
-        "#AIDesignCommunity", "#ArchitectureInnovation", "#AIinArchitecture", "#futurecities", "#DesignBoom",
-        "#AlgorithmicDesign", "#architecturelovers", "#architecture_hunter", "#cityvision", city_hashtag
-    ],
-    [
-        "#architecturelovers", "#aiart", "#conceptarchitecture", "#futureofarchitecture", "#cityscape",
-        "#europeancities", "#archdaily", "#innoarchdaily", "#futuristicarchitecture", "#cityvision", "#dreambuildings",
-        "#stedenbouw", "#urbansketch", "#aiarchitecture", "#architectuur", "#designlovers", "#AlgorithmicDesign",
-        "#ModernArchitecture", "#AIinArchitecture", city_hashtag, "#artificialintelligence"
-    ]
-]
-hashtag_list = hashtag_sets[post_counter % len(hashtag_sets)]
+caption = f"✨ {series_title}\n{desc}\n\n{cta}\n\n{hashtags}"
 
-caption = (
-    f"✨ {series_title}\n"
-    f"{desc1}\n\n"
-    f"{cta}\n\n"
-    f"{' '.join(hashtag_list)}"
-)
-
-# 9. Instagram post + locatie
+# 11. Instagram Posting
 location_id = get_location_id(city, instagram_token)
 media_data = {
     "image_url": image_url,
@@ -263,6 +218,6 @@ publish = requests.post(
 ).json()
 print("📤 Publish result:", publish)
 
-# 10. Update counter
+# 12. Counter bijwerken
 with open(counter_file, "w") as f:
     f.write(str(post_counter + 1))

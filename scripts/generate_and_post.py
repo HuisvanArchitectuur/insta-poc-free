@@ -131,43 +131,49 @@ if image_content is None:
         "output_format": "png"
     }
 
-    response = requests.post(stability_url, headers=headers, json=payload)
-    if response.status_code == 200:
-        result = response.json()
-        image_b64 = result['image']
-        image_content = base64.b64decode(image_b64)
-        print("✅ Afbeelding gegenereerd met Stability AI")
-    else:
-        print("❌ Stability AI mislukt:", response.status_code, response.text)
-        exit(1)
-
-# Tweede fallback binnen Stability AI – gebruik SDXL via v1 endpoint
-if image_content is None:
-    print("🔁 Tweede fallback binnen Stability AI (v1 SDXL-beta)...")
-
-    stability_v1_url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-beta-v2-2-2/text-to-image"
-    headers = {
-        "Authorization": f"Bearer {stability_api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "text_prompts": [{"text": prompt}],
-        "cfg_scale": 7,
-        "height": 1024,
-        "width": 1024,
-        "samples": 1,
-        "steps": 30
+    files = {
+    "prompt": (None, prompt),
+    "output_format": (None, "png")
     }
 
-    response = requests.post(stability_v1_url, headers=headers, json=payload)
+    response = requests.post(stability_url, headers=headers, files=files)
     if response.status_code == 200:
         result = response.json()
-        image_b64 = result['artifacts'][0]['base64']
-        image_content = base64.b64decode(image_b64)
-        print("✅ Afbeelding gegenereerd met Stability (v1 SDXL)")
+        image_b64 = result.get("image")
+        if image_b64:
+            image_content = base64.b64decode(image_b64)
+            print("✅ Afbeelding gegenereerd met Stability v2beta")
+        else:
+            print("⚠️ Geen afbeelding ontvangen van Stability v2beta:", result)
     else:
-        print("❌ Tweede Stability AI fallback mislukt:", response.status_code, response.text)
+        print("❌ Fallback 1 faalde:", response.status_code, response.text)
         exit(1)
+
+    # Tweede fallback binnen Stability AI – gebruik SDXL (v1 engine)
+    if image_content is None:
+        print("🔁 Tweede fallback binnen Stability AI (v1 SDXL)...")
+        stability_url = "https://api.stability.ai/v2beta/stable-image/generate/sdxl"
+        headers = {
+            "Authorization": f"Bearer {stability_api_key}"
+        }
+        files = {
+            "prompt": (None, prompt),
+            "output_format": (None, "png")
+        }
+
+        response = requests.post(stability_url, headers=headers, files=files)
+        if response.status_code == 200:
+            result = response.json()
+            image_b64 = result.get("image")
+            if image_b64:
+                image_content = base64.b64decode(image_b64)
+                print("✅ Afbeelding gegenereerd met Stability SDXL fallback")
+            else:
+                print("⚠️ Geen afbeelding teruggekregen in SDXL response:", result)
+                exit(1)
+        else:
+            print("❌ Tweede Stability AI fallback mislukt:", response.status_code, response.text)
+            exit(1)
 
 # Afbeelding opslaan
 with open("output.png", "wb") as f:

@@ -153,8 +153,8 @@ if image_content is None:
     payload = {
         "text_prompts": [{"text": prompt}],
         "cfg_scale": 7,
-        "height": 1024,
-        "width": 1024,
+        "height": 512,
+        "width": 768,
         "samples": 1,
         "steps": 30
     }

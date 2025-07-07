@@ -125,7 +125,6 @@ files = {
 }
 
 response = requests.post(stability_url, headers=headers, files=files)
-    }
     payload = {
         "prompt": prompt,
         "output_format": "png"

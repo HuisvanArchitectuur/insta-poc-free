@@ -113,14 +113,15 @@ def generate_image(prompt, seed, hf_token, endpoints):
 
 image_content = generate_image(prompt, seed, hf_token, HF_ENDPOINTS)
 
-# 🔁 Fallback naar Stability AI
-if image_content is None:
-    print("🔁 Fallback naar Stability AI...")
-    if not stability_api_key:
-        print("❌ STABILITY_API_KEY ontbreekt.")
-        exit(1)
-
-        stability_url = "https://api.stability.ai/v2beta/stable-image/generate/sdxl"
+    # Fallback naar Stability AI (v2beta core)
+    if image_content is None:
+        print("🔁 Fallback naar Stability AI (v2beta core)...")
+        
+        if not stability_api_key:
+            print("❌ STABILITY_API_KEY ontbreekt.")
+            exit(1)
+    
+        stability_url = "https://api.stability.ai/v2beta/stable-image/generate/core"
         headers = {
             "Authorization": f"Bearer {stability_api_key}"
         }
@@ -128,31 +129,19 @@ if image_content is None:
             "prompt": (None, prompt),
             "output_format": (None, "png")
         }
-
+    
         response = requests.post(stability_url, headers=headers, files=files)
+        
         if response.status_code == 200:
             result = response.json()
             image_b64 = result.get("image")
             if image_b64:
                 image_content = base64.b64decode(image_b64)
-                print("✅ Afbeelding gegenereerd met Stability SDXL fallback")
+                print("✅ Afbeelding gegenereerd met Stability v2beta core fallback")
             else:
-                print("⚠️ Geen afbeelding teruggekregen in SDXL response:", result)
-                exit(1)
+                print("⚠️ Geen afbeelding teruggekregen in v2beta response:", result)
         else:
-            print("❌ Tweede Stability AI fallback mislukt:", response.status_code, response.text)
-            exit(1)
-    if response.status_code == 200:
-        result = response.json()
-        image_b64 = result.get("image")
-        if image_b64:
-            image_content = base64.b64decode(image_b64)
-            print("✅ Afbeelding gegenereerd met Stability v2beta")
-        else:
-            print("⚠️ Geen afbeelding ontvangen van Stability v2beta:", result)
-    else:
-        print("❌ Fallback 1 faalde:", response.status_code, response.text)
-        exit(1)
+            print("❌ Fallback Stability v2beta faalde:", response.status_code, response.text)
 
     # Tweede fallback binnen Stability AI – gebruik SDXL (v1 engine)
     if image_content is None:

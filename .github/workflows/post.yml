@@ -3,7 +3,7 @@ name: Twice Daily Instagram Post
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6,17 * * *' # 08:00 & 19:00 Belgische tijd (UTC+2)
+    - cron: '0 17 */2 * *' # Elke 2 dagen om 17:00 UTC (19:00 Belgische tijd)
 
 jobs:
   post:

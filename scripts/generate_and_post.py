@@ -21,6 +21,28 @@ def get_location_id(city_name, access_token):
     print(f"⚠️ Geen locatie-id gevonden voor: {city_name}")
     return None
 
+# --- NIEUW: Dynamisch HuggingFace model ophalen ---
+def get_top_hf_model():
+    url = "https://huggingface.co/models-json"
+    params = {
+        "pipeline_tag": "text-to-image",
+        "inference_provider": "hf-inference",
+        "sort": "trending",
+        "withCount": "true"
+    }
+    try:
+        resp = requests.get(url, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        models = data.get("models", [])
+        for model in models:
+            for provider in model.get("availableInferenceProviders", []):
+                if provider["provider"] == "hf-inference" and provider["modelStatus"] == "live":
+                    return provider["providerId"]
+    except Exception as e:
+        print("⚠️ Fout bij ophalen van top-model:", e)
+    return None
+
 # 1. Secrets
 hf_token = os.getenv("HF_API_TOKEN")
 stability_api_key = os.getenv("STABILITY_API_KEY")
@@ -88,32 +110,32 @@ prompt = (
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
-# 5. Generate Image (multi-endpoint HuggingFace)
-HF_ENDPOINTS = [
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large-turbo",
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large",
-    "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
-    "https://api-inference.huggingface.co/models/SG161222/Realistic_Vision_V6.0_B1_noVAE"
-]
+# 5. Generate Image met dynamisch HF-model
+def generate_image(prompt, seed, hf_token):
+    model_id = get_top_hf_model()
+    if not model_id:
+        print("❌ Geen geldig Hugging Face model beschikbaar.")
+        return None
 
-def generate_image(prompt, seed, hf_token, endpoints):
+    endpoint = f"https://api-inference.huggingface.co/models/{model_id}"
     headers = {"Authorization": f"Bearer {hf_token}"}
     data = {"inputs": prompt, "parameters": {"seed": seed}}
-    for endpoint in endpoints:
-        print(f"🔄 Probeer endpoint: {endpoint}")
-        resp = requests.post(endpoint, headers=headers, json=data)
-        content_type = resp.headers.get("Content-Type", "")
-        if resp.status_code == 200 and content_type.startswith("image/"):
-            print(f"✅ Afbeelding ontvangen van {endpoint}")
-            return resp.content
-        else:
-            print(f"❌ Fout bij {endpoint}: Status {resp.status_code}, Content-Type: {content_type}")
-            print("Response:", resp.text)
-    return None
 
-image_content = generate_image(prompt, seed, hf_token, HF_ENDPOINTS)
+    print(f"🔄 Gebruik model: {model_id}")
+    resp = requests.post(endpoint, headers=headers, json=data)
+    content_type = resp.headers.get("Content-Type", "")
 
-  # Fallback 1: Stability AI v2beta core
+    if resp.status_code == 200 and content_type.startswith("image/"):
+        print(f"✅ Afbeelding ontvangen van {model_id}")
+        return resp.content
+    else:
+        print(f"❌ Fout bij model {model_id}: Status {resp.status_code}, Content-Type: {content_type}")
+        print("Response:", resp.text)
+        return None
+
+image_content = generate_image(prompt, seed, hf_token)
+
+# Fallback 1: Stability AI v2beta core
 if image_content is None:
     headers = {
       "Authorization": f"Bearer {stability_api_key}",
@@ -147,6 +169,7 @@ if image_content is None:
     response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/sdxl", headers=headers, json=payload)
     if response.status_code == 200:
         image_content = base64.b64decode(response.json()["artifacts"][0]["base64"])
+
 # Afbeelding opslaan
 with open("output.png", "wb") as f:
     f.write(image_content)

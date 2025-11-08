@@ -13,7 +13,7 @@ def get_location_id(city_name, access_token):
         "fields": "id,name",
         "access_token": access_token
     }
-    resp = requests.get(url, params=params)
+    resp = requests.get(url, params=params, timeout=30)
     if resp.status_code == 200:
         data = resp.json()
         if 'data' in data and data['data']:
@@ -21,7 +21,7 @@ def get_location_id(city_name, access_token):
     print(f"⚠️ Geen locatie-id gevonden voor: {city_name}")
     return None
 
-# --- NIEUW: Dynamisch HuggingFace model ophalen ---
+# --- NIEUW: Dynamisch HuggingFace model ophalen (ongewijzigd) ---
 def get_top_hf_model():
     url = "https://huggingface.co/models-json"
     params = {
@@ -31,7 +31,7 @@ def get_top_hf_model():
         "withCount": "true"
     }
     try:
-        resp = requests.get(url, params=params)
+        resp = requests.get(url, params=params, timeout=30)
         resp.raise_for_status()
         data = resp.json()
         models = data.get("models", [])
@@ -110,33 +110,42 @@ prompt = (
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
-# 5. Generate Image met dynamisch HF-model
+# 5. Generate Image met dynamisch HF-model — FIXED: router endpoint
 def generate_image(prompt, seed, hf_token):
     model_id = get_top_hf_model()
     if not model_id:
         print("❌ Geen geldig Hugging Face model beschikbaar.")
         return None
 
-    endpoint = f"https://api-inference.huggingface.co/models/{model_id}"
+    # Nieuw endpoint volgens HF Inference Providers (router)
+    endpoint = f"https://router.huggingface.co/hf-inference/models/{model_id}"
     headers = {"Authorization": f"Bearer {hf_token}"}
     data = {"inputs": prompt, "parameters": {"seed": seed}}
 
     print(f"🔄 Gebruik model: {model_id}")
-    resp = requests.post(endpoint, headers=headers, json=data)
-    content_type = resp.headers.get("Content-Type", "")
+    try:
+        resp = requests.post(endpoint, headers=headers, json=data, timeout=120)
+    except requests.exceptions.RequestException as e:
+        print("❌ Netwerkfout bij aanroepen HF-router:", e)
+        return None
 
+    content_type = resp.headers.get("Content-Type", "")
     if resp.status_code == 200 and content_type.startswith("image/"):
         print(f"✅ Afbeelding ontvangen van {model_id}")
         return resp.content
     else:
+        # Log status + tekst (kan JSON met error zijn)
         print(f"❌ Fout bij model {model_id}: Status {resp.status_code}, Content-Type: {content_type}")
-        print("Response:", resp.text)
+        try:
+            print("Response:", resp.text[:500])
+        except Exception:
+            pass
         return None
 
 image_content = generate_image(prompt, seed, hf_token)
 
 # Fallback 1: Stability AI v2beta core
-if image_content is None:
+if image_content is None and stability_api_key:
     headers = {
       "Authorization": f"Bearer {stability_api_key}",
       "Accept": "application/json"
@@ -145,14 +154,17 @@ if image_content is None:
       "prompt": (None, prompt),
       "output_format": (None, "png")
     }
-    response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/core", headers=headers, files=files)
-    if response.status_code == 200:
-        image_b64 = response.json().get("image")
-        if image_b64:
-            image_content = base64.b64decode(image_b64)
+    try:
+        response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/core", headers=headers, files=files, timeout=120)
+        if response.status_code == 200:
+            image_b64 = response.json().get("image")
+            if image_b64:
+                image_content = base64.b64decode(image_b64)
+    except requests.exceptions.RequestException as e:
+        print("❌ Stability core netwerkfout:", e)
 
 # Fallback 2: Stability AI SDXL via v2beta
-if image_content is None:
+if image_content is None and stability_api_key:
     headers = {
       "Authorization": f"Bearer {stability_api_key}",
       "Content-Type": "application/json",
@@ -166,11 +178,18 @@ if image_content is None:
       "samples": 1,
       "steps": 30
     }
-    response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/sdxl", headers=headers, json=payload)
-    if response.status_code == 200:
-        image_content = base64.b64decode(response.json()["artifacts"][0]["base64"])
+    try:
+        response = requests.post("https://api.stability.ai/v2beta/stable-image/generate/sdxl", headers=headers, json=payload, timeout=120)
+        if response.status_code == 200:
+            image_content = base64.b64decode(response.json()["artifacts"][0]["base64"])
+    except requests.exceptions.RequestException as e:
+        print("❌ Stability SDXL netwerkfout:", e)
 
-# Afbeelding opslaan
+# Beveiligd wegschrijven
+if not image_content:
+    print("❌ Geen afbeelding gegenereerd na alle pogingen. Stop run.")
+    raise SystemExit(1)
+
 with open("output.png", "wb") as f:
     f.write(image_content)
 print("✅ Image saved as output.png")
@@ -182,7 +201,7 @@ try:
     print("✔️ Uploaded successfully:", image_url)
 except Exception as e:
     print("❌ Upload error:", e)
-    exit(1)
+    raise SystemExit(1)
 
 # 7. Caption bouwen
 series_titles = [
@@ -246,7 +265,7 @@ caption = (
     f"{' '.join(hashtag_list)}"
 )
 
-# 8. Post naar Instagram
+# 8. Post naar Instagram (ongewijzigde API-versies om jouw flow niet te breken)
 location_id = get_location_id(city, instagram_token)
 media_data = {
     "image_url": image_url,
@@ -258,16 +277,18 @@ if location_id:
 
 media = requests.post(
     f"https://graph.facebook.com/v16.0/{ig_business_id}/media",
-    data=media_data
+    data=media_data,
+    timeout=60
 ).json()
 print("📦 Media upload response:", media)
 if 'id' not in media:
     print("❌ No media id received – abort:", media)
-    exit(1)
+    raise SystemExit(1)
 
 publish = requests.post(
     f"https://graph.facebook.com/v23.0/{ig_business_id}/media_publish",
-    data={"creation_id": media['id'], "access_token": instagram_token}
+    data={"creation_id": media['id'], "access_token": instagram_token},
+    timeout=60
 ).json()
 print("📤 Publish result:", publish)
 

@@ -304,7 +304,11 @@ print("✅ Image saved as output.png")
 
 # 6. Upload naar Cloudinary
 try:
-    up = cloudinary.uploader.upload("output.png", folder="daily_posts")
+    up = cloudinary.uploader.upload(
+        "output.png",
+        folder="daily_posts",
+        format="jpg"
+    )
     image_url = up["secure_url"]
     print("✔️ Uploaded successfully:", image_url)
 except Exception as e:

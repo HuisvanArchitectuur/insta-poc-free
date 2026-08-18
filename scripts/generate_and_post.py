@@ -5,6 +5,7 @@ import cloudinary
 import cloudinary.uploader
 import base64
 import time
+from io import BytesIO
 
 # --- LOCATIE FUNCTIE TOEGEVOEGD ---
 def get_location_id(city_name, access_token):
@@ -20,28 +21,6 @@ def get_location_id(city_name, access_token):
         if 'data' in data and data['data']:
             return data['data'][0]['id']
     print(f"⚠️ Geen locatie-id gevonden voor: {city_name}")
-    return None
-
-# --- NIEUW: Dynamisch HuggingFace model ophalen (ongewijzigd) ---
-def get_top_hf_model():
-    url = "https://huggingface.co/models-json"
-    params = {
-        "pipeline_tag": "text-to-image",
-        "inference_provider": "hf-inference",
-        "sort": "trending",
-        "withCount": "true"
-    }
-    try:
-        resp = requests.get(url, params=params, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
-        models = data.get("models", [])
-        for model in models:
-            for provider in model.get("availableInferenceProviders", []):
-                if provider["provider"] == "hf-inference" and provider["modelStatus"] == "live":
-                    return provider["providerId"]
-    except Exception as e:
-        print("⚠️ Fout bij ophalen van top-model:", e)
     return None
 
 # 1. Secrets
@@ -80,12 +59,46 @@ if random.random() < 0.4:
     green_roof_phrase = "green roofs, "
 
 # 3. Concept Prompts
+# Zelfde vijf inhoudelijke concepten als voordien, maar preciezer omschreven
+# voor realistische architectuur en minder typische AI-fouten.
 prompts = [
-    "Design a visionary {building_type} in {city} that showcases innovative sustainable architecture. The building features {green_roof_phrase}extensive use of {material1} and {material2}, integrated solar panels, and visible water recycling systems. The design feels rooted in the city’s context, and is bustling with people interacting during golden hour.",
-    "Create a futuristic {building_type} in {city}, inspired by local history, art, or iconic architectural motifs. Blend traditional {material1} with cutting-edge {material2}, resulting in a building that feels both familiar and forward-thinking. Present the scene at golden hour, with people engaging in and around the building.",
-    "Generate a concept {building_type} in {city} designed for social interaction and community gathering. Incorporate inviting plazas, open terraces, and vibrant public spaces. The architecture features a mix of {material1} and {material2}, with greenery woven throughout. Lively crowds of people interact during golden hour.",
-    "Imagine a flexible mixed-use {building_type} in {city}, capable of adapting to changing community needs. The structure combines modular design, multi-purpose spaces, and materials like {material1} and {material2}. The building is filled with activity and interaction, shown at golden hour.",
-    "Design an experimental {building_type} in {city} where the building’s unique form is driven by its function. Use unexpected combinations of {material1} and {material2}, and integrate features like rooftop parks or open amphitheaters. The image captures people exploring the innovative spaces at golden hour."
+    (
+        "Architectural photograph of a visionary {building_type} in {city}, designed as a plausible built project "
+        "with clear structural logic, realistic spans, buildable façades and coherent circulation. "
+        "The concept focuses on innovative sustainable architecture: {green_roof_phrase}integrated photovoltaic panels, "
+        "visible but architecturally integrated water reuse, passive shading and climate-responsive design. "
+        "Use {material1} and {material2} as the dominant materials, with realistic joints, thicknesses, weathering and construction details. "
+        "The architecture must respond to the urban scale and character of {city}, without copying a known landmark. "
+        "Include a believable public realm with correctly scaled people using the building naturally."
+    ),
+    (
+        "Architectural photograph of a contemporary {building_type} in {city}, rooted in local history, craft and urban character "
+        "without imitating a specific existing building. Translate traditional proportions, rhythms or spatial ideas into a new design. "
+        "Combine {material1} with {material2} in a restrained, buildable way, with coherent façade depth, window placement and structural logic. "
+        "The result should feel familiar to its context yet clearly contemporary and forward-looking. "
+        "Show realistic human scale, entrances, ground-floor interaction and public space."
+    ),
+    (
+        "Architectural photograph of a new {building_type} in {city} conceived primarily as a place for social interaction and community life. "
+        "Organize the project around inviting plazas, sheltered thresholds, terraces and visible shared spaces that connect logically to entrances. "
+        "Use {material1} and {material2} consistently, with realistic detailing and construction. "
+        "Integrate planting as part of the spatial design rather than decorative green walls everywhere. "
+        "People should gather, walk, sit and interact naturally at believable scale."
+    ),
+    (
+        "Architectural photograph of a flexible and adaptable {building_type} in {city}. "
+        "Express a rational structural grid, generous floor-to-floor heights, reusable spaces and a modular envelope that could realistically change over time. "
+        "Use {material1} and {material2} with a clear hierarchy between structure, infill and openings. "
+        "Avoid arbitrary futuristic shapes: innovation should come from adaptability, spatial quality and construction logic. "
+        "Show an active building with realistic circulation, entrances and people."
+    ),
+    (
+        "Architectural photograph of an experimental {building_type} in {city} where the form grows logically from programme, structure and public use. "
+        "Create one strong architectural idea rather than multiple unrelated gestures. "
+        "Use {material1} and {material2} with realistic thickness, connections, façade rhythm and structural support. "
+        "A rooftop public space, stepped landscape or open amphitheatre may be integrated only if it is spatially and structurally plausible. "
+        "Show people exploring and using the building naturally, with correct human scale."
+    )
 ]
 
 # 4. Post Counter
@@ -106,42 +119,136 @@ prompt = (
         material2=material2,
         green_roof_phrase=green_roof_phrase
     )
-    + " Neutral color palette, architectural photography, editorial style, ultra realistic, 4K, matte finish, photo-realistic, cinematic, architectural magazine, detailed lighting."
+    + (
+        " Professional architectural photography, eye-level or slightly elevated camera, 28–35 mm full-frame lens, "
+        "straight verticals, natural perspective, physically plausible daylight at warm late-afternoon golden hour. "
+        "Restrained contemporary color palette, realistic material texture, subtle imperfections, believable reflections and shadows. "
+        "Editorial architecture magazine quality, photorealistic rather than illustrative. "
+        "No impossible cantilevers, warped geometry, melted façades, duplicated building elements, random openings, floating objects, "
+        "distorted people, extra limbs, illegible signage, fake text, excessive sci-fi styling or ornamental complexity."
+    )
 )
 
 print(f"⚡️ Post count: {post_counter} | Concept index: {concept_idx} | Seed: {seed} | City: {city} | Building: {building_type} | Materials: {material1} + {material2}")
 
-# 5. Generate Image met dynamisch HF-model — FIXED: router endpoint
-def generate_image(prompt, seed, hf_token):
-    model_id = get_top_hf_model()
-    if not model_id:
-        print("❌ Geen geldig Hugging Face model beschikbaar.")
-        return None
+# 5. Generate Image
+# Eerst vaste kwaliteitsmodellen. Als die tijdelijk niet beschikbaar zijn,
+# zoeken we dynamisch naar een live Hugging Face text-to-image model.
+def get_dynamic_hf_models(exclude_models=None, max_models=5):
+    exclude_models = set(exclude_models or [])
+    url = "https://huggingface.co/models-json"
+    params = {
+        "pipeline_tag": "text-to-image",
+        "inference_provider": "hf-inference",
+        "sort": "trending",
+        "withCount": "true"
+    }
 
-    # Nieuw endpoint volgens HF Inference Providers (router)
-    endpoint = f"https://router.huggingface.co/hf-inference/models/{model_id}"
-    headers = {"Authorization": f"Bearer {hf_token}"}
-    data = {"inputs": prompt, "parameters": {"seed": seed}}
-
-    print(f"🔄 Gebruik model: {model_id}")
     try:
-        resp = requests.post(endpoint, headers=headers, json=data, timeout=120)
-    except requests.exceptions.RequestException as e:
-        print("❌ Netwerkfout bij aanroepen HF-router:", e)
+        resp = requests.get(url, params=params, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        models = data.get("models", [])
+        candidates = []
+
+        for model in models:
+            for provider in model.get("availableInferenceProviders", []):
+                if (
+                    provider.get("provider") == "hf-inference"
+                    and provider.get("modelStatus") == "live"
+                ):
+                    model_id = provider.get("providerId")
+                    if model_id and model_id not in exclude_models and model_id not in candidates:
+                        candidates.append(model_id)
+
+                    if len(candidates) >= max_models:
+                        return candidates
+
+        return candidates
+
+    except Exception as e:
+        print("⚠️ Fout bij dynamisch ophalen van HF-modellen:", e)
+        return []
+
+
+# De bestaande HF token blijft gebruikt worden. Hugging Face kiest automatisch
+# een beschikbare Inference Provider voor het gekozen model.
+def generate_image(prompt, seed, hf_token):
+    if not hf_token:
+        print("⚠️ Geen HF_API_TOKEN gevonden.")
         return None
 
-    content_type = resp.headers.get("Content-Type", "")
-    if resp.status_code == 200 and content_type.startswith("image/"):
-        print(f"✅ Afbeelding ontvangen van {model_id}")
-        return resp.content
-    else:
-        # Log status + tekst (kan JSON met error zijn)
-        print(f"❌ Fout bij model {model_id}: Status {resp.status_code}, Content-Type: {content_type}")
-        try:
-            print("Response:", resp.text[:500])
-        except Exception:
-            pass
+    try:
+        from huggingface_hub import InferenceClient
+    except ImportError:
+        print("❌ huggingface_hub ontbreekt. Voeg 'huggingface_hub' toe aan requirements.txt.")
         return None
+
+    preferred_models = [
+        "black-forest-labs/FLUX.1-Krea-dev",
+        "black-forest-labs/FLUX.1-dev",
+        "black-forest-labs/FLUX.1-schnell",
+    ]
+
+    client = InferenceClient(
+        api_key=hf_token,
+        provider="auto",
+        timeout=180,
+    )
+
+    # 1. Eerst de vaste kwaliteitsmodellen proberen
+    for model_id in preferred_models:
+        print(f"🔄 Gebruik voorkeursmodel: {model_id}")
+        try:
+            image = client.text_to_image(
+                prompt,
+                model=model_id,
+                seed=seed,
+                width=1024,
+                height=1024,
+            )
+
+            buffer = BytesIO()
+            image.save(buffer, format="PNG")
+            print(f"✅ Afbeelding ontvangen van {model_id}")
+            return buffer.getvalue()
+
+        except Exception as e:
+            print(f"⚠️ Voorkeursmodel {model_id} mislukt of niet beschikbaar: {e}")
+
+    # 2. Als alle voorkeursmodellen falen: dynamisch live HF-model proberen
+    dynamic_models = get_dynamic_hf_models(
+        exclude_models=preferred_models,
+        max_models=5,
+    )
+
+    if dynamic_models:
+        print(f"🔁 {len(dynamic_models)} dynamische HF-fallback(s) gevonden.")
+    else:
+        print("⚠️ Geen dynamische live HF-fallbacks gevonden.")
+
+    for model_id in dynamic_models:
+        print(f"🔄 Gebruik dynamische HF-fallback: {model_id}")
+        try:
+            image = client.text_to_image(
+                prompt,
+                model=model_id,
+                seed=seed,
+                width=1024,
+                height=1024,
+            )
+
+            buffer = BytesIO()
+            image.save(buffer, format="PNG")
+            print(f"✅ Afbeelding ontvangen van dynamische fallback {model_id}")
+            return buffer.getvalue()
+
+        except Exception as e:
+            print(f"⚠️ Dynamische fallback {model_id} mislukt: {e}")
+
+    print("❌ Geen Hugging Face model kon een afbeelding genereren.")
+    return None
+
 
 image_content = generate_image(prompt, seed, hf_token)
 

@@ -4,6 +4,7 @@ import requests
 import cloudinary
 import cloudinary.uploader
 import base64
+import time
 
 # --- LOCATIE FUNCTIE TOEGEVOEGD ---
 def get_location_id(city_name, access_token):
@@ -265,7 +266,41 @@ caption = (
     f"{' '.join(hashtag_list)}"
 )
 
-# 8. Post naar Instagram (ongewijzigde API-versies om jouw flow niet te breken)
+# 8. Post naar Instagram (zelfde API-versies; enkel wachten tot Meta klaar is)
+def wait_until_media_ready(container_id, access_token, max_attempts=12, wait_seconds=5):
+    status_url = f"https://graph.facebook.com/v23.0/{container_id}"
+
+    for attempt in range(max_attempts):
+        try:
+            response = requests.get(
+                status_url,
+                params={
+                    "fields": "status_code",
+                    "access_token": access_token
+                },
+                timeout=30
+            )
+            data = response.json()
+            status = data.get("status_code")
+
+            print(f"⏳ Media verwerking ({attempt + 1}/{max_attempts}): {status}")
+
+            if status == "FINISHED":
+                print("✅ Media klaar voor publicatie.")
+                return True
+
+            if status in ("ERROR", "EXPIRED"):
+                print("❌ Media processing mislukt:", data)
+                return False
+
+        except requests.exceptions.RequestException as e:
+            print("⚠️ Fout tijdens statuscontrole:", e)
+
+        time.sleep(wait_seconds)
+
+    print("❌ Media werd niet tijdig klaar voor publicatie.")
+    return False
+
 location_id = get_location_id(city, instagram_token)
 media_data = {
     "image_url": image_url,
@@ -285,12 +320,22 @@ if 'id' not in media:
     print("❌ No media id received – abort:", media)
     raise SystemExit(1)
 
+media_id = media["id"]
+
+if not wait_until_media_ready(media_id, instagram_token):
+    print("❌ Publicatie afgebroken omdat media niet klaar is.")
+    raise SystemExit(1)
+
 publish = requests.post(
     f"https://graph.facebook.com/v23.0/{ig_business_id}/media_publish",
-    data={"creation_id": media['id'], "access_token": instagram_token},
+    data={"creation_id": media_id, "access_token": instagram_token},
     timeout=60
 ).json()
 print("📤 Publish result:", publish)
+
+if "id" not in publish:
+    print("❌ Instagram-publicatie mislukt:", publish)
+    raise SystemExit(1)
 
 # 9. Counter bijwerken
 with open(counter_file, "w") as f:

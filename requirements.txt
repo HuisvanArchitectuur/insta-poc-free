@@ -2,3 +2,4 @@ requests
 openai
 pillow
 cloudinary
+huggingface_hub
